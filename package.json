@@ -2,7 +2,7 @@
     "name": "insights",
     "displayName": "InSights",
     "description": "Minimal code stats extension for VScode",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "publisher": "behemehal",
     "icon": "https://raw.githubusercontent.com/behemehal/InSights/master/img/icon.png",
     "repository": {
