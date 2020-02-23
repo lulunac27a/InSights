@@ -7,18 +7,18 @@ const vscode = require('vscode');
 function activate(context) {
     const fs = require("fs");
     const path = require("path");
-	let status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-	const insightsOutput = vscode.window.createOutputChannel(`InSights`);
-	status.command = "insights.status";
-	var ignoreFile = ["node_modules",".insightsIgnore","*.rar","*.zip","*.waw","*.svg","*.png","*.ico","*.gif","*.mp3","*.mp4","*.jpg","*.jpeg","*.raw"];
-	var defaultIgnore = ["package.json","package-lock.json",".gitignore",".eslintrc.yml",".vscodeignore","LICENSE",".npmignore",".travis.yml",".jshintrc","gulpfile.js","license","*.txt"];
-	var availableSettings = {
-		exploreTimeout:x=> x<25000&&x>2000,
-		reExploreTimeout:x=> x>5000,
-		noIgnoreNodeModules:x=> x=="true"||x=="false"||x==true||x==false
-	};
-	var dirSearch = [];
-	var settings = [];
+    let status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+    const insightsOutput = vscode.window.createOutputChannel(`InSights`);
+    status.command = "insights.status";
+    var ignoreFile = ["node_modules", ".insightsIgnore", "*.rar", "*.zip", "*.waw", "*.svg", "*.png", "*.ico", "*.gif", "*.mp3", "*.mp4", "*.jpg", "*.jpeg", "*.raw"];
+    var defaultIgnore = ["package.json", "package-lock.json", ".gitignore", ".eslintrc.yml", ".vscodeignore", "LICENSE", ".npmignore", ".travis.yml", ".jshintrc", "gulpfile.js", "license", "*.txt"];
+    var availableSettings = {
+        exploreTimeout: x => x < 25000 && x > 2000,
+        reExploreTimeout: x => x > 5000,
+        noIgnoreNodeModules: x => x == "true" || x == "false" || x == true || x == false
+    };
+    var dirSearch = [];
+    var settings = [];
     var intr;
     var q;
 
@@ -50,7 +50,8 @@ function activate(context) {
                     console.log(err);
                 }
                 for (const item of Object.values(dr)) {
-                    if (!ignoreFile.includes(item.name) && ignoreFile.filter(x => x.includes("*")).map(x => x.split("*")[1] == path.extname(item.name)).filter(x => x).length == 0) {
+                    var absoluteExt = (x) => "." + x.split(".").splice(1).join(".");
+                    if (!ignoreFile.includes(item.name) && ignoreFile.filter(x => x.includes("*")).map(x => x.split("*")[1] == absoluteExt(item.name)).filter(x => x).length == 0) {
                         var dirrectoryLike = (item.isDirectory() || item.isSymbolicLink());
                         var file = dirrectoryLike ? 0 : fs.readFileSync(path.resolve(dir + "/" + item.name), "utf8");
                         dirSearch.push([
@@ -67,7 +68,7 @@ function activate(context) {
                             await searchDir(dir + "/" + item.name);
                         }
                     } else {
-						insightsOutput.append(`[Info] ${item.name} ignored\n`);
+                        insightsOutput.append(`[Info] ${item.name} ignored\n`);
                     }
                 }
                 resolve(dirSearch);
@@ -75,45 +76,53 @@ function activate(context) {
         });
     };
     var getInsights = function() {
-		var ms = new Date().getTime();
-		insightsOutput.append('[Info] Exploring environment\n');
+        var ms = new Date().getTime();
+        insightsOutput.append('[Info] Exploring environment\n');
         var folder = vscode.workspace.workspaceFolders;
         if (folder) {
             if (fs.existsSync(folder[0].uri.fsPath + "/.insightsIgnore")) {
-				insightsOutput.append('[Info] insightsIgnore exist getting ignore\n');
-                fs.readFileSync(folder[0].uri.fsPath + "/.insightsIgnore", "utf8").split("\n").forEach(x => !x.includes("//") && x!=="" && x!==" " ? x[0]!=="@"? ignoreFile.push(x) : settings.push(x) : false);
+                insightsOutput.append('[Info] insightsIgnore exist getting ignore\n');
+                fs.readFileSync(folder[0].uri.fsPath + "/.insightsIgnore", "utf8").split("\n").forEach(x => {
+                    if (!x.includes("/\/") && x !== "" && x !== " ") {
+                        if (x[0] !== "@") {
+                            ignoreFile.push(x);
+                        } else {
+                            settings.push(x);
+                        }
+                    }
+                });
             } else {
-				ignoreFile = [...ignoreFile,...defaultIgnore];
-				insightsOutput.append('[Info] insightsIgnore not exist. Using default config\n');
-			}
+                ignoreFile = [...ignoreFile, ...defaultIgnore];
+                insightsOutput.append('[Info] insightsIgnore not exist. Using default config\n');
+            }
             status.hide();
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Window,
                 title: "Exploring environment...",
                 cancellable: true
-            }, (q,token) => {
-				var cancellation = false;
-				token.onCancellationRequested(() => {
-					cancellation = true;
-				});
+            }, (q, token) => {
+                var cancellation = false;
+                token.onCancellationRequested(() => {
+                    cancellation = true;
+                });
                 var promise = new Promise(async (resolve) => {
-					var fixedSettings = settings.map(x=> x.replace("@","").split("="));
-					var parsedSettings = {};
-					fixedSettings.forEach(x=> {
-						if(availableSettings[x[0]]) {
-							if(availableSettings[x[0]](x[1])) {
-								parsedSettings[x[0]] = x[1];
-							} else {
-								vscode.window.showWarningMessage(`${x[0]}'s value '${x[1]}' is not correct`);
-							}
-						} else {
-							vscode.window.showWarningMessage(x[0] + " is not recognized as correct option");
-						}
-					});
-					parsedSettings.noIgnoreNodeModules&&parsedSettings.noIgnoreNodeModules!=="false"?ignoreFile=ignoreFile.filter(x=> x!=="node_modules"):false;
-					var result = await searchDir(folder[0].uri.fsPath);
-					insightsOutput.append(`[Info] exploring environment took ${Math.abs(ms-new Date().getTime())}ms\n`);
-					
+                    var fixedSettings = settings.map(x => x.replace("@", "").split("="));
+                    var parsedSettings = {};
+                    fixedSettings.forEach(x => {
+                        if (availableSettings[x[0]]) {
+                            if (availableSettings[x[0]](x[1])) {
+                                parsedSettings[x[0]] = x[1];
+                            } else {
+                                vscode.window.showWarningMessage(`${x[0]}'s value '${x[1]}' is not correct`);
+                            }
+                        } else {
+                            vscode.window.showWarningMessage(x[0] + " is not recognized as correct option");
+                        }
+                    });
+                    parsedSettings.noIgnoreNodeModules && parsedSettings.noIgnoreNodeModules !== "false" ? ignoreFile = ignoreFile.filter(x => x !== "node_modules") : false;
+                    var result = await searchDir(folder[0].uri.fsPath);
+                    insightsOutput.append(`[Info] exploring environment took ${Math.abs(ms-new Date().getTime())}ms\n`);
+
                     var filtered = {
                         files: {},
                         details: {
@@ -127,11 +136,11 @@ function activate(context) {
                             folders: 0
                         }
                     };
-					var extDef = (n) => n == "" || n == "." ? "ignore" : n.replace(".", "").toUpperCase();
+                    var extDef = (n) => n == "" || n == "." ? "ignore" : n.replace(".", "").toUpperCase();
                     result.forEach(element => {
-						if(element[4]=="folder") {
-							filtered.details.folders++;
-						}
+                        if (element[4] == "folder") {
+                            filtered.details.folders++;
+                        }
                         if (!element[1]) {
                             filtered.details.files.totalFile++;
                             filtered.details.files.totalCharachter += element[3].charachter;
@@ -162,9 +171,10 @@ function activate(context) {
                                 };
                             }
                         } else {
-                            
+
                         }
-					});
+                    });
+
                     function bytesToSize(bytes) {
                         var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
                         if (bytes == 0) return '0 Byte';
@@ -175,43 +185,43 @@ function activate(context) {
                     intr ? intr instanceof Function ? clearInterval(intr) : false : false;
                     var mostUsedLang = Object.entries(filtered.files).map(x => [x[0], x[1].max.size]).reduce(function(p, v) {
                         return (p[1] > v[1] ? p : v);
-					})[0];
+                    })[0];
                     resolve(true);
                     status.show();
                     var intrF = () => {
                         if (q == 0) {
                             status.text = `$(info) ${bytesToSize(filtered.details.files.totalSize)} of file has been written`;
-                            intr = setInterval(intrF,parsedSettings.exploreTimeout||7000);
+                            intr = setInterval(intrF, parsedSettings.exploreTimeout || 7000);
                         } else if (q == 1) {
                             status.text = `$(info) ${abbreviateNumber(filtered.details.files.totalLine)} line of code written`;
                         } else if (q == 2) {
                             status.text = `$(info) ${abbreviateNumber(filtered.details.files.totalCharachter)} charachter written`;
                         } else if (q == 3) {
-							if(filtered.details.files.totalLang==2) {
-								status.text = `$(info) You only used ${Object.keys(filtered.files)[0]}`;
-							} else if(filtered.details.files.totalLang==1) {
-								status.text = `$(info) You only used ${Object.keys(filtered.files).join(" and ")}`;
-							} else {
-								status.text = `$(info) ${filtered.details.files.totalLang} different language used`;
-							}
+                            if (filtered.details.files.totalLang == 2) {
+                                status.text = `$(info) You only used ${Object.keys(filtered.files)[0]}`;
+                            } else if (filtered.details.files.totalLang == 1) {
+                                status.text = `$(info) You only used ${Object.keys(filtered.files).join(" and ")}`;
+                            } else {
+                                status.text = `$(info) ${filtered.details.files.totalLang} different language used`;
+                            }
                         } else if (q == 4) {
                             status.text = `$(info) ${mostUsedLang} is the most used language`;
                         } else if (q == 5) {
                             status.text = `$(info) Largest file in ${mostUsedLang} is ${filtered.files[mostUsedLang].max.name}`;
                         } else {
-							status.text = "InSights Idle";
-							q=0;
-                            setTimeout(getInsights,parsedSettings.reExploreTimeout||5000);
+                            status.text = "InSights Idle";
+                            q = 0;
+                            setTimeout(getInsights, parsedSettings.reExploreTimeout || 5000);
                             clearInterval(intr);
                         }
                         q++;
-					};
-					cancellation?false:intrF();
+                    };
+                    cancellation ? false : intrF();
                 });
                 return promise;
             });
         } else {
-			insightsOutput.append("[ERR ] No workspace or dirrectory is open exploring canceled\n");
+            insightsOutput.append("[ERR ] No workspace or dirrectory is open exploring canceled\n");
             vscode.window.showErrorMessage("No workspace or dirrectory is open InSights unavailable");
             status.color = "red";
             status.text = `$(info) InSights Unavailable`;
@@ -225,39 +235,29 @@ function activate(context) {
         var folder = vscode.workspace.workspaceFolders;
         if (folder) {
             if (fs.existsSync(folder[0].uri.fsPath + "/.insightsIgnore")) {
-				insightsOutput.append("[ERR ] insightsIgnore file already exist\n");
+                insightsOutput.append("[ERR ] insightsIgnore file already exist\n");
                 vscode.window.showErrorMessage("insightsIgnore file already exist.");
             } else {
-				var defaultData = "// ******************************************************************************\n// * You can ignore file extensions like *.[fileExtension]                      *\n// * You can add settings like @[settingName]=[value]                           *\n// * You have to write all rules line by line without ','(Comma)                *\n// * You cannot add comment end of the rule. Example: e.js //Test File          *\n// * You cannot add multiple rules to one line                                  *\n// * You are free to delete this comment                                        *\n// * Settings as default                                                        *\n// *  - @exploreTimeout=7000      -  Max 25000 Min 2000 Timeout between reports *\n// *  - @noIgnoreNodeModules=false -  Overrides default node_modules ignore     *\n// *  - @reExploreTimeout=5000    -  Min 5000 Timeout for reExploring project   *\n// ******************************************************************************\n"+defaultIgnore.join("\n");
+                var defaultData = "// ******************************************************************************\n// * You can ignore file extensions like *.[fileExtension]                      *\n// * You can add settings like @[settingName]=[value]                           *\n// * You have to write all rules line by line without ','(Comma)                *\n// * You cannot add comment end of the rule. Example: e.js //Test File          *\n// * You cannot add multiple rules to one line                                  *\n// * You are free to delete this comment                                        *\n// * Settings as default                                                        *\n// *  - @exploreTimeout=7000      -  Max 25000 Min 2000 Timeout between reports *\n// *  - @noIgnoreNodeModules=false -  Overrides default node_modules ignore     *\n// *  - @reExploreTimeout=5000    -  Min 5000 Timeout for reExploring project   *\n// ******************************************************************************\n" + defaultIgnore.join("\n");
                 fs.writeFile(folder[0].uri.fsPath + "/.insightsIgnore", defaultData, (err) => {
                     if (err) {
-						insightsOutput.append(`[ERR ] ${err.message}\n`);
-						vscode.window.showErrorMessage(err.message);
+                        insightsOutput.append(`[ERR ] ${err.message}\n`);
+                        vscode.window.showErrorMessage(err.message);
                     }
                 });
                 vscode.window.showInformationMessage("insightsIgnore file created you may want to edit this file");
             }
         } else {
-			insightsOutput.append("[ERR ] No workspace or dirrectory is open create insightsIgnore canceled\n");
+            insightsOutput.append("[ERR ] No workspace or dirrectory is open create insightsIgnore canceled\n");
             vscode.window.showErrorMessage("Open workspace or folder to create insightsIgnore");
         }
     }));
 }
 exports.activate = activate;
 
-// this method is called when your extension is deactivated
 function deactivate() {}
 
 module.exports = {
     activate,
     deactivate
 };
-
-
-/*                         
-	Toplam size          5
-	Toplam Satır         5
-	Toplam karakter      5
-	Toplam yazılan dil   5
-	Senkronize ediliyor  5
-*/

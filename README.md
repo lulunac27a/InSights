@@ -1,4 +1,7 @@
 # InSights
+[![VS Code Marketplace](https://vsmarketplacebadge.apphb.com/version-short/behemehal.insights.svg)](https://marketplace.visualstudio.com/items?itemName=behemehal.insights)
+[![GitHub license](https://img.shields.io/github/license/behemehal/InSights)](https://github.com/behemehal/InSights/blob/master/LICENSE)
+
 Minimal code stats extension for VScode
 
 See your project details in status bar to motivate yourself

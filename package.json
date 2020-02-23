@@ -2,7 +2,7 @@
     "name": "insights",
     "displayName": "InSights",
     "description": "Minimal code stats extension for VScode",
-    "version": "0.0.3",
+    "version": "1.0.5",
     "publisher": "behemehal",
     "icon": "img/icon.png",
     "repository": {
@@ -36,10 +36,6 @@
         "commands": [{
                 "command": "extension.createinsightsignore",
                 "title": "Create InSights Ignore File"
-            },
-            {
-                "command": "insights.status",
-                "title": "Reload Scan"
             }
         ]
     },
