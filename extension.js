@@ -11,7 +11,7 @@ function activate(context) {
     const insightsOutput = vscode.window.createOutputChannel(`InSights`);
     status.command = "insights.status";
     var ignoreFile = ["node_modules", ".insightsIgnore", "*.rar", "*.zip", "*.waw", "*.svg", "*.png", "*.ico", "*.gif", "*.mp3", "*.mp4", "*.jpg", "*.jpeg", "*.raw"];
-    var defaultIgnore = ["package.json", "package-lock.json", ".gitignore", ".eslintrc.yml", ".vscodeignore", "LICENSE", ".npmignore", ".travis.yml", ".jshintrc", "gulpfile.js", "license", "*.txt"];
+    var defaultIgnore = ["package.json", "package-lock.json", ".gitignore", ".eslintrc.yml", ".vscodeignore", "LICENSE", ".npmignore", ".travis.yml", ".jshintrc", "gulpfile.js", "license", "*.txt", "LICENSE.txt", ".git", "Cargo.toml", "target", "Lia.yaml", "EllieMod", "*.eiw"];
     var availableSettings = {
         exploreTimeout: x => x < 25000 && x > 2000,
         reExploreTimeout: x => x > 5000,
@@ -75,6 +75,7 @@ function activate(context) {
             });
         });
     };
+    
     var getInsights = function() {
         var ms = new Date().getTime();
         insightsOutput.append('[Info] Exploring environment\n');
