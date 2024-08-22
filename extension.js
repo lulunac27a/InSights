@@ -26,16 +26,16 @@ function activate(context) {
         var newValue = value;
         if (value >= 1000) {
             var suffixes = ["", "k", "m", "b", "t"];
-            var suffixNum = Math.floor(("" + value).length / 3);
+            var suffixNum = Math.floor((("" + Math.floor(value)).length - 1) / 3);
             var shortValue = '';
-            for (var precision = 2; precision >= 1; precision--) {
+            for (var precision = 3; precision >= 2; precision--) {
                 shortValue = parseFloat((suffixNum != 0 ? (value / Math.pow(1000, suffixNum)) : value).toPrecision(precision));
                 var dotLessShortValue = (shortValue + '').replace(/[^a-zA-Z 0-9]+/g, '');
                 if (dotLessShortValue.length <= 2) {
                     break;
                 }
             }
-            if (shortValue % 1 != 0) shortValue = shortValue.toFixed(1);
+            if (shortValue % 1 != 0) shortValue = shortValue.toFixed(3);
             newValue = shortValue + suffixes[suffixNum];
         }
         return newValue;
@@ -60,7 +60,7 @@ function activate(context) {
                             dirrectoryLike ? NaN : (fs.statSync(path.resolve(dir + "/" + item.name)).size),
                             dirrectoryLike ? false : {
                                 line: file.split("\n").length,
-                                charachter: file.length
+                                character: file.length
                             },
                             dirrectoryLike ? "folder" : path.extname(item.name)
                         ]);
@@ -130,7 +130,7 @@ function activate(context) {
                             files: {
                                 totalSize: 0,
                                 totalLine: 0,
-                                totalCharachter: 0,
+                                totalCharacter: 0,
                                 totalFile: 0,
                                 totalLang: 0
                             },
@@ -144,14 +144,14 @@ function activate(context) {
                         }
                         if (!element[1]) {
                             filtered.details.files.totalFile++;
-                            filtered.details.files.totalCharachter += element[3].charachter;
+                            filtered.details.files.totalCharacter += element[3].character;
                             filtered.details.files.totalLine += element[3].line;
                             filtered.details.files.totalSize += element[2];
                             var ext = extDef(element[4]);
                             if (filtered.files[ext]) {
                                 filtered.files[ext].line += element[3].line;
                                 filtered.files[ext].size += element[2];
-                                filtered.files[ext].charachter += element[3].charachter;
+                                filtered.files[ext].character += element[3].character;
                                 if (element[2] > filtered.files[ext].max.size) {
                                     filtered.files[ext].max = Object.assign({
                                         name: element[0],
@@ -164,7 +164,7 @@ function activate(context) {
                                     name: element[0],
                                     line: element[3].line,
                                     size: element[2],
-                                    charachter: element[3].charachter,
+                                    character: element[3].character,
                                     max: Object.assign({
                                         name: element[0],
                                         size: element[2]
@@ -180,7 +180,7 @@ function activate(context) {
                         var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
                         if (bytes == 0) return '0 Byte';
                         var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-                        return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+                        return Math.round(bytes / Math.pow(1024, i) * 1000) / 1000 + ' ' + sizes[i];
                     }
                     q = 0;
                     intr ? intr instanceof Function ? clearInterval(intr) : false : false;
@@ -194,16 +194,16 @@ function activate(context) {
                             status.text = `$(info) ${bytesToSize(filtered.details.files.totalSize)} of file has been written`;
                             intr = setInterval(intrF, parsedSettings.exploreTimeout || 7000);
                         } else if (q == 1) {
-                            status.text = `$(info) ${abbreviateNumber(filtered.details.files.totalLine)} line of code written`;
+                            status.text = `$(info) ${abbreviateNumber(filtered.details.files.totalLine)} lines of code written`;
                         } else if (q == 2) {
-                            status.text = `$(info) ${abbreviateNumber(filtered.details.files.totalCharachter)} charachter written`;
+                            status.text = `$(info) ${abbreviateNumber(filtered.details.files.totalCharacter)} characters written`;
                         } else if (q == 3) {
                             if (filtered.details.files.totalLang == 2) {
                                 status.text = `$(info) You only used ${Object.keys(filtered.files)[0]}`;
                             } else if (filtered.details.files.totalLang == 1) {
                                 status.text = `$(info) You only used ${Object.keys(filtered.files).join(" and ")}`;
                             } else {
-                                status.text = `$(info) ${filtered.details.files.totalLang} different language used`;
+                                status.text = `$(info) ${filtered.details.files.totalLang} different languages used`;
                             }
                         } else if (q == 4) {
                             status.text = `$(info) ${mostUsedLang} is the most used language`;
